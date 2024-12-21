@@ -1,0 +1,7 @@
+how to export a object in ts in type module
+https://stackoverflow.com/questions/41762570/how-do-i-export-an-object-in-typescript
+
+argument of type 'string | undefined' is not assignable to parameter of type 'string'. type 'undefined' is not assignable to type 'string'.
+https://stackoverflow.com/questions/54496398/typescript-type-string-undefined-is-not-assignable-to-type-string
+
+userId: { type: mongoose.Types.ObjectId, ref: 'User', required: true },
