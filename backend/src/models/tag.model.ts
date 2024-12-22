@@ -1,7 +1,7 @@
-import mongoose from 'mongoose';
+import mongoose, { model, Schema } from 'mongoose';
 
-const tagSchema = new mongoose.Schema({
+const tagSchema = new Schema({
   title: { type: String, required: true },
 });
 
-export const Tag = new mongoose.Model('Tag', tagSchema);
+export const Tag = model('Tag', tagSchema);

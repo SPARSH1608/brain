@@ -15,7 +15,28 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.connectDB = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const connectDB = (url) => __awaiter(void 0, void 0, void 0, function* () {
-    const conn = yield mongoose_1.default.connect(url);
-    console.log(`connected to db `);
+    try {
+        yield mongoose_1.default.connect(url);
+        console.log('Connected to MongoDB');
+        // const index = {
+        //   name: 'vector_index',
+        //   type: 'vectorSearch',
+        //   definition: {
+        //     fields: [
+        //       {
+        //         type: 'vector',
+        //         numDimensions: 1536,
+        //         path: 'plot_embedding',
+        //         similarity: 'dotProduct',
+        //       },
+        //     ],
+        //   },
+        // };
+        // const result = await collection.createSearchIndex(index);
+        // console.log(`Vector index created: ${result}`);
+    }
+    catch (error) {
+        console.error('error while connecting to db', error);
+    }
 });
 exports.connectDB = connectDB;

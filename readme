@@ -5,3 +5,8 @@ argument of type 'string | undefined' is not assignable to parameter of type 'st
 https://stackoverflow.com/questions/54496398/typescript-type-string-undefined-is-not-assignable-to-type-string
 
 userId: { type: mongoose.Types.ObjectId, ref: 'User', required: true },
+
+Type 'typeof import("C:/Users/ryuga/Desktop/projext/no_brainer/backend/node_modules/mongodb/mongodb")' has no construct signatures.
+
+5 const client = new MongoClient(uri);
+~~~~~~~~~~~

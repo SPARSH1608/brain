@@ -1,5 +1,5 @@
 import express from 'express';
-import { config } from './config/server.config';
+import config from './config/server.config';
 import { connectDB } from './config/db';
 import ApiRoutes from './routes/index';
 

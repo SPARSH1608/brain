@@ -12,18 +12,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const server_config_1 = __importDefault(require("./config/server.config"));
-const db_1 = require("./config/db");
-const index_1 = __importDefault(require("./routes/index"));
-const app = (0, express_1.default)();
-app.use(express_1.default.json());
-app.use(express_1.default.urlencoded({ extended: true }));
-app.use('/api/v1', index_1.default);
-const startServer = () => __awaiter(void 0, void 0, void 0, function* () {
-    app.listen(server_config_1.default.PORT, () => {
-        console.log(`Server listening on port ${server_config_1.default.PORT}`);
+exports.generateEmbeddings = generateEmbeddings;
+const generative_ai_1 = require("@google/generative-ai");
+const server_config_1 = __importDefault(require("../config/server.config"));
+const genAI = new generative_ai_1.GoogleGenerativeAI(server_config_1.default.API_KEY);
+const model1 = genAI.getGenerativeModel({ model: 'text-embedding-004' });
+function generateEmbeddings(input) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const result = yield model1.embedContent(input);
+            return result.embedding.values; // Embedding values
+        }
+        catch (error) {
+            console.error('Error generating embeddings:', error);
+            return null;
+        }
     });
-    (0, db_1.connectDB)(server_config_1.default.MONGO_URI);
-});
-startServer();
+}

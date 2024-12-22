@@ -1,16 +1,26 @@
 import express from 'express';
+import { createUser, login } from '../../controllers/user.controller';
+import authMiddleware from '../../middlewares/middleware';
+import {
+  createContent,
+  deleteContent,
+  getContents,
+} from '../../controllers/content.controller';
+import { createLink, sharedLink } from '../../controllers/share.controller';
+
 const router = express.Router();
 
-router.post('/signup', (req, res, next) => {});
-router.post('/signin', (req, res, next) => {});
+router.post('/signup', createUser);
+router.post('/signin', login);
 
-router.post('/content', (req, res, next) => {});
+router.post('/content', authMiddleware, createContent);
 
-router.get('/content', (req, res, next) => {});
+router.get('/content', authMiddleware, getContents);
 
-router.delete('/content', (req, res, next) => {});
+router.delete('/content', authMiddleware, deleteContent);
 
-router.post('/brain/share', (req, res, next) => {});
+router.post('/brain/share', authMiddleware, createLink);
 
-router.get('/brain/:shareLink', (req, res, next) => {});
+router.get('/brain/:shareLink', sharedLink);
+
 export default router;

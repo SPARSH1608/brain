@@ -1,8 +1,13 @@
-import mongoose from 'mongoose';
+import mongoose, { model, Schema } from 'mongoose';
 
-const linkSchema = new mongoose.Schema({
-  link: { type: String, required: true },
-  userId: { type: mongoose.Types.ObjectId, required: true, ref: 'User' },
+const linkSchema = new Schema({
+  hash: { type: String, required: true },
+  userId: {
+    type: mongoose.Types.ObjectId,
+    required: true,
+    ref: 'User',
+    unique: true,
+  },
 });
 
-export const Link = new mongoose.Model('Link', linkSchema);
+export const Link = model('Link', linkSchema);
