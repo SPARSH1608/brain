@@ -8,7 +8,7 @@ function extractVideoId(url) {
 
 // Function to fetch video information (title and description) from YouTube API
 async function fetchVideoInfo(videoId) {
-  const apiKey = 'AIzaSyAG5SMLptqXXQdVBzbeFaOpYsRqzX4DDNc'; // Replace with your YouTube API key
+  const apiKey = ''; // Replace with your YouTube API key
   const apiUrl = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${apiKey}&part=snippet`;
 
   try {

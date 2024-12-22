@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 dotenv.config();
 // Initialize the Generative AI instance with your API key
-const genAI = new GoogleGenerativeAI('AIzaSyBzJAvEMNiP35oHxWMeOQeGhZcuzRpoD9M');
+const genAI = new GoogleGenerativeAI('');
 
 // Select the model to use
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -33,7 +33,7 @@ async function generateTags(input) {
 
 // Example Input
 const userInput = `
-    https://www.mongodb.com/docs/atlas/atlas-vector-search/create-embeddings/
+   
 `;
 
 // Generate and print tags
