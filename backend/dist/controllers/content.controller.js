@@ -82,7 +82,7 @@ const createContent = (req, res, next) => __awaiter(void 0, void 0, void 0, func
             // Step 3: Save the embeddings in the Embedding collection
             const embedding = new embedding_model_1.Embedding({
                 contentId: savedContent._id,
-                embeddings: JSON.stringify(embeddings),
+                embeddings: embeddings,
             });
             yield embedding.save();
             res.status(200).json({

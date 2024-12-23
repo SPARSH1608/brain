@@ -13,36 +13,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.connectDB = void 0;
-const mongodb_1 = require("mongodb");
-const server_config_1 = __importDefault(require("./server.config"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const connectDB = (url) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const client = yield new mongodb_1.MongoClient(url);
-        console.log('Connected to MongoDB');
-        const db = client.db(server_config_1.default.DB_NAME);
-        const collection = db.collection(server_config_1.default.COLLECTION_NAME);
-        // await collection.dropIndexes();
-        // // // Create the vector index for 'embeddings' field
-        // const index = {
-        //   name: 'vector_index',
-        //   type: 'vectorSearch',
-        //   definition: {
-        //     fields: [
-        //       {
-        //         type: 'vector',
-        //         numDimensions: 1536, // Adjust to match your embedding's dimensions
-        //         path: 'embeddings', // Field where embeddings are stored
-        //         similarity: 'dotProduct', // Similarity type, can be cosine or dotProduct
-        //       },
-        //     ],
-        //   },
-        // };
-        // // Create the index
-        // const result = await collection.createSearchIndex(index);
-        // console.log(`Vector index created: ${JSON.stringify(result)}`);
+        yield mongoose_1.default.connect(url);
+        console.log('Database connected successfully');
     }
     catch (error) {
-        console.error('Error while connecting to DB or creating index:', error);
+        console.log('Error connecting to database: ', error);
     }
 });
 exports.connectDB = connectDB;

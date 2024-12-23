@@ -78,7 +78,7 @@ export const createContent = async (
       // Step 3: Save the embeddings in the Embedding collection
       const embedding = new Embedding({
         contentId: savedContent._id,
-        embeddings: JSON.stringify(embeddings),
+        embeddings: embeddings,
       });
       await embedding.save();
 

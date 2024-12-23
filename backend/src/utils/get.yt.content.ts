@@ -1,3 +1,5 @@
+import config from '../config/server.config';
+
 // Function to extract the video ID from a YouTube URL
 export function extractVideoId(url: string) {
   const regex =
@@ -8,7 +10,7 @@ export function extractVideoId(url: string) {
 
 // Function to fetch video information (title and description) from YouTube API
 async function fetchVideoInfo(videoId: string) {
-  const apiKey = 'AIzaSyAG5SMLptqXXQdVBzbeFaOpYsRqzX4DDNc'; // Replace with your YouTube API key
+  const apiKey = config.YT_API; // Replace with your YouTube API key
   const apiUrl = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${apiKey}&part=snippet`;
 
   try {
