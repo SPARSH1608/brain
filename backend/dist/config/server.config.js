@@ -16,5 +16,7 @@ const config = {
     COLLECTION_NAME: process.env.COLLECTION_NAME || '',
     DB_NAME: process.env.DB_NAME || '',
     VOYAGE_API_KEY: process.env.VOYAGE_API_KEY || '',
+    YT_API: process.env.YT_API || '',
+    IS_VECTOR: process.env.IS_VECTOR || false,
 };
 exports.default = config;

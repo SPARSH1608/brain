@@ -60,7 +60,3 @@ function displayVideoInfo(url) {
         }
     });
 }
-// Example URL input
-// const url = 'https://youtu.be/LPZh9BOjkQs?si=25ksOIynFl5xwxm-'; // Replace with a YouTube video URL
-// // Calling the function to fetch and display video information
-// displayVideoInfo(url);

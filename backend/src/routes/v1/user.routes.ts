@@ -4,6 +4,7 @@ import authMiddleware from '../../middlewares/middleware';
 import {
   createContent,
   deleteContent,
+  findContents,
   getContents,
   searchContent,
 } from '../../controllers/content.controller';
@@ -25,5 +26,6 @@ router.post('/brain/share', authMiddleware, createLink);
 router.get('/brain/:shareLink', sharedLink);
 
 router.get('/search', authMiddleware, searchContent);
+router.get('/searchcontent', authMiddleware, findContents);
 
 export default router;

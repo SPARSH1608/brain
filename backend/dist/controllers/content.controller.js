@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchContent = exports.deleteContent = exports.getContents = exports.createContent = void 0;
+exports.findContents = exports.searchContent = exports.deleteContent = exports.getContents = exports.createContent = void 0;
 const content_model_1 = require("../models/content.model");
 const embedding_model_1 = require("../models/embedding.model");
 const mongodb_1 = require("mongodb");
@@ -56,6 +56,12 @@ const createContent = (req, res, next) => __awaiter(void 0, void 0, void 0, func
         linkContent = yield (0, generate_content_1.generateContent)(contentInput.input);
         console.log('Link Content:', linkContent);
     }
+    if (linkContent === null) {
+        res.status(400).json({
+            message: 'Link content not found',
+        });
+        return;
+    }
     try {
         // Generate tags based on the content input
         const tags = yield (0, generate_tags_1.generateTags)(linkContent);
@@ -74,6 +80,7 @@ const createContent = (req, res, next) => __awaiter(void 0, void 0, void 0, func
                 ? contentInput.input
                 : '', // Only for media files
             tags: tagsArray, // Save the tags array
+            info: linkContent,
         });
         const savedContent = yield content.save();
         console.log('Content Saved', savedContent);
@@ -169,14 +176,26 @@ const searchContent = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             console.log('Indexes:', indexes);
             const searchResults = yield (0, vector_search_1.vectorSearch)(query, collection);
             console.log('Search Results:', searchResults);
-            const contextEmbeddings = searchResults.map((result) => result.embeddings);
-            console.log('Context embeddings retrieved:', contextEmbeddings);
-            console.log('Generating final response...');
+            //const searchResults: {
+            //contentId: string;
+            //embeddings: number[];
+            //score: number;
+            // }[]
+            const contextEmbeddingsIds = searchResults.map((result) => result.contentId);
+            console.log('Context content ids retrieved:', contextEmbeddingsIds);
+            let finalContext = [];
+            const contextContent = yield Promise.all(contextEmbeddingsIds.map((id) => __awaiter(void 0, void 0, void 0, function* () {
+                const ans = yield content_model_1.Content.findById(id);
+                if (ans) {
+                    finalContext.push(ans.info);
+                }
+            })));
+            console.log('Generating final response...', finalContext);
             const finalResponse = yield (0, generate_response_1.generateResponse)({
-                context: contextEmbeddings,
+                context: finalContext,
                 query,
             });
-            console.log('Final Response:', finalResponse);
+            console.log('f', finalResponse);
             res.status(200).json({
                 message: 'Search results',
                 success: true,
@@ -194,3 +213,54 @@ const searchContent = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.searchContent = searchContent;
+const findContents = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { query, tag } = req.body;
+    const userId = req.userId;
+    console.log('userId', userId);
+    try {
+        if (tag) {
+            const contentByTag = yield content_model_1.Content.find({ tags: { $in: [tag] } });
+            res.json({ results: contentByTag });
+            return;
+        }
+        if (query) {
+            console.log('Performing vector search...');
+            const client = yield new mongodb_1.MongoClient(server_config_1.default.MONGO_URI);
+            const db = client.db(server_config_1.default.DB_NAME);
+            const collection = db.collection(server_config_1.default.COLLECTION_NAME);
+            const indexes = yield collection.indexes();
+            console.log('Indexes:', indexes);
+            const searchResults = yield (0, vector_search_1.vectorSearch)(query, collection);
+            console.log('Search Results:', searchResults);
+            //const searchResults: {
+            //contentId: string;
+            //embeddings: number[];
+            //score: number;
+            // }[]
+            const contextEmbeddingsIds = searchResults.map((result) => result.contentId);
+            console.log('Context content ids retrieved:', contextEmbeddingsIds);
+            let finalContext = [];
+            const contextContent = yield Promise.all(contextEmbeddingsIds.map((id) => __awaiter(void 0, void 0, void 0, function* () {
+                const ans = yield content_model_1.Content.findById(id);
+                if (ans) {
+                    finalContext.push(ans.info);
+                }
+            })));
+            console.log('Generating final response...', finalContext);
+            res.status(200).json({
+                message: 'Search results',
+                success: true,
+                data: finalContext,
+            });
+            return;
+        }
+        res
+            .status(400)
+            .json({ success: false, message: 'Invalid search parameters' });
+    }
+    catch (error) {
+        console.error('Error during search:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+exports.findContents = findContents;

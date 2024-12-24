@@ -21,19 +21,19 @@ function vectorSearch(query, collection) {
         const pipeline = [
             {
                 $vectorSearch: {
-                    index: 'vector_index', // Ensure the correct index name
-                    queryVector: queryEmbedding, // The 1536-dimensional query vector
-                    path: 'embeddings', // Field where the embeddings are stored in your collection
-                    numCandidates: 900, // Number of candidates to consider
-                    limit: 100, // Limit the number of results
+                    index: 'vector_index',
+                    queryVector: queryEmbedding,
+                    path: 'embeddings',
+                    numCandidates: 1000,
+                    limit: 1000,
                 },
             },
             {
                 $project: {
-                    _id: 0, // Exclude _id field
-                    contentId: 1, // Include contentId field
-                    embeddings: 1, // Include embeddings field (the vector representation)
-                    score: { $meta: 'vectorSearchScore' }, // Include similarity score
+                    _id: 1,
+                    contentId: 1,
+                    embeddings: 1,
+                    score: { $meta: 'vectorSearchScore' },
                 },
             },
         ];

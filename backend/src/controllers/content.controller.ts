@@ -11,7 +11,13 @@ import { upload } from '../utils/upload.file';
 import { generateResponse } from '../utils/generate.response';
 import { vectorSearch } from '../utils/vector-search';
 import config from '../config/server.config';
+import { parseApiResponse } from '../utils/Info.parser';
 
+interface Info {
+  title: string;
+  description: string;
+  summary?: string;
+}
 export const createContent = async (
   req: Request,
   res: Response,
@@ -22,7 +28,7 @@ export const createContent = async (
   const contentInput = req.body;
   const contentType = detectContentType(contentInput.input);
   console.log('contentType', contentType);
-  let linkContent;
+  let linkContent: Info | null | undefined;
   let fileUrl;
   if (
     contentType === 'image' ||
@@ -48,6 +54,12 @@ export const createContent = async (
     linkContent = await generateContent(contentInput.input);
     console.log('Link Content:', linkContent);
   }
+  if (linkContent === null) {
+    res.status(400).json({
+      message: 'Link content not found',
+    });
+    return;
+  }
   try {
     // Generate tags based on the content input
     const tags = await generateTags(linkContent);
@@ -69,6 +81,7 @@ export const createContent = async (
           ? contentInput.input
           : '', // Only for media files
       tags: tagsArray, // Save the tags array
+      info: linkContent,
     });
     const savedContent = await content.save();
     console.log('Content Saved', savedContent);
@@ -165,27 +178,103 @@ export const searchContent = async (req: Request, res: Response) => {
       const client = await new MongoClient(config.MONGO_URI);
       const db = client.db(config.DB_NAME);
       const collection = db.collection(config.COLLECTION_NAME);
+
       const indexes = await collection.indexes();
       console.log('Indexes:', indexes);
+
       const searchResults = await vectorSearch(query, collection);
       console.log('Search Results:', searchResults);
-      const contextEmbeddings = searchResults.map(
-        (result) => result.embeddings
-      );
-      console.log('Context embeddings retrieved:', contextEmbeddings);
+      //const searchResults: {
+      //contentId: string;
+      //embeddings: number[];
+      //score: number;
+      // }[]
 
-      console.log('Generating final response...');
+      const contextEmbeddingsIds = searchResults.map(
+        (result) => result.contentId
+      );
+      console.log('Context content ids retrieved:', contextEmbeddingsIds);
+      let finalContext: Info[] = [];
+      const contextContent = await Promise.all(
+        contextEmbeddingsIds.map(async (id) => {
+          const ans = await Content.findById(id);
+
+          if (ans) {
+            finalContext.push(ans.info);
+          }
+        })
+      );
+      console.log('Generating final response...', finalContext);
       const finalResponse = await generateResponse({
-        context: contextEmbeddings,
+        context: finalContext,
         query,
       });
-
-      console.log('Final Response:', finalResponse);
+      console.log('f', finalResponse);
 
       res.status(200).json({
         message: 'Search results',
         success: true,
         geminiResponse: finalResponse,
+      });
+      return;
+    }
+
+    res
+      .status(400)
+      .json({ success: false, message: 'Invalid search parameters' });
+  } catch (error) {
+    console.error('Error during search:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+export const findContents = async (req: Request, res: Response) => {
+  const { query, tag } = req.body;
+  const userId = req.userId;
+  console.log('userId', userId);
+  try {
+    if (tag) {
+      const contentByTag = await Content.find({ tags: { $in: [tag] } });
+      res.json({ results: contentByTag });
+      return;
+    }
+
+    if (query) {
+      console.log('Performing vector search...');
+      const client = await new MongoClient(config.MONGO_URI);
+      const db = client.db(config.DB_NAME);
+      const collection = db.collection(config.COLLECTION_NAME);
+
+      const indexes = await collection.indexes();
+      console.log('Indexes:', indexes);
+
+      const searchResults = await vectorSearch(query, collection);
+      console.log('Search Results:', searchResults);
+      //const searchResults: {
+      //contentId: string;
+      //embeddings: number[];
+      //score: number;
+      // }[]
+
+      const contextEmbeddingsIds = searchResults.map(
+        (result) => result.contentId
+      );
+      console.log('Context content ids retrieved:', contextEmbeddingsIds);
+      let finalContext: Info[] = [];
+      const contextContent = await Promise.all(
+        contextEmbeddingsIds.map(async (id) => {
+          const ans = await Content.findById(id);
+
+          if (ans) {
+            finalContext.push(ans.info);
+          }
+        })
+      );
+      console.log('Generating final response...', finalContext);
+
+      res.status(200).json({
+        message: 'Search results',
+        success: true,
+        data: finalContext,
       });
       return;
     }

@@ -17,4 +17,5 @@ router.delete('/content', middleware_1.default, content_controller_1.deleteConte
 router.post('/brain/share', middleware_1.default, share_controller_1.createLink);
 router.get('/brain/:shareLink', share_controller_1.sharedLink);
 router.get('/search', middleware_1.default, content_controller_1.searchContent);
+router.get('/searchcontent', middleware_1.default, content_controller_1.findContents);
 exports.default = router;

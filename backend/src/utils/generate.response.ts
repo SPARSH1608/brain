@@ -4,7 +4,11 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 // Initialize the Gemini API
 const genAI = new GoogleGenerativeAI(config.API_KEY);
 const model2 = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
+interface Info {
+  title: string;
+  description: string;
+  summary?: string;
+}
 /**
  * Generates a relevant and up-to-date response for the given query and context using the Gemini API.
  * @param param0 The object containing the prompt and context.
@@ -17,27 +21,53 @@ export async function generateResponse({
   context,
 }: {
   query: string;
-  context: Number[][];
+  context: Info[];
 }): Promise<string> {
   console.log('Query:', query);
   console.log('Context:', context);
 
-  const prompt = `
-  You are a highly intelligent system that processes and utilizes context to generate precise and relevant responses.
+  const prompt = `You are a retrieval-augmented system designed to generate contextually relevant responses based on the most similar content from a knowledge base.
 
-  Context:
-  The following context consists of embeddings that represent key pieces of information related to the query. These embeddings contain relevant knowledge that can be used to provide a more accurate and informed response. Please review the context thoroughly and use it to enhance your answer.
+Input Format:
+1. Context: An array of relevant content where each item contains:
+   {
+     "info": {
+       "title": "Content title",
+       "description": "Detailed content description",
+       "summary": "Optional content summary"
+     },
+     
+   }
 
-  ${context}
+2. Query: \${query}
+Context:${context}
 
-  Query: ${query}
+Instructions for Processing:
+1. For each piece of relevant content:
+   - Review the title, description, and summary (if available)
+   - Consider the similarity score to weigh relevance
+   - Extract key information that relates to the query
 
-  Your response should:
-  - Leverage the given context (embeddings) to provide the most relevant and accurate information.
-  - Ensure the response directly addresses the query, using the context to provide insight.
-  - Avoid redundant or irrelevant information, focusing only on what is necessary to answer the query effectively.
-  - Be clear, concise, and comprehensive, providing a complete answer based on the context provided.
-`;
+2. Response Generation:
+   - Synthesize information from the most relevant content (highest similarity scores)
+   - Ensure response directly addresses the query using available information
+   - Maintain coherent flow between different pieces of content
+   - Include relevant titles as citations when appropriate
+
+Example Input:
+{
+  "relevant_content": [
+    {
+      "info": {
+        "title": "Introduction to PostgreSQL",
+        "description": "Comprehensive overview of PostgreSQL features...",
+        "summary": "Key features and benefits of PostgreSQL"
+      },
+      
+    }
+  ],
+  "query": ${query}
+}`;
 
   try {
     // Generate content using the Gemini model

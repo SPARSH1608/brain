@@ -1,5 +1,11 @@
 import config from '../config/server.config';
 
+interface Info {
+  title: string;
+  description: string;
+  summary?: string;
+}
+
 // Function to extract the video ID from a YouTube URL
 export function extractVideoId(url: string) {
   const regex =
@@ -9,8 +15,8 @@ export function extractVideoId(url: string) {
 }
 
 // Function to fetch video information (title and description) from YouTube API
-async function fetchVideoInfo(videoId: string) {
-  const apiKey = config.YT_API; // Replace with your YouTube API key
+async function fetchVideoInfo(videoId: string): Promise<Info | null> {
+  const apiKey = 'AIzaSyAG5SMLptqXXQdVBzbeFaOpYsRqzX4DDNc'; // Replace with your YouTube API key
   const apiUrl = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${apiKey}&part=snippet`;
 
   try {
@@ -47,8 +53,3 @@ export async function displayVideoInfo(url: string) {
     console.log('Invalid YouTube URL!');
   }
 }
-// Example URL input
-// const url = 'https://youtu.be/LPZh9BOjkQs?si=25ksOIynFl5xwxm-'; // Replace with a YouTube video URL
-
-// // Calling the function to fetch and display video information
-// displayVideoInfo(url);
