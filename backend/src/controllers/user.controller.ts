@@ -6,8 +6,8 @@ import config from '../config/server.config';
 import jwt from 'jsonwebtoken';
 
 const userSchema = zod.object({
-  username: zod.string().min(3).max(10),
-  password: zod.string().min(8).max(20),
+  username: zod.string().min(3),
+  password: zod.string().min(4),
 });
 
 export const createUser = async (
@@ -21,13 +21,15 @@ export const createUser = async (
     const { success } = userSchema.safeParse(body);
     if (!success) {
       res.status(411).json({ success: false, message: 'Error in Inputs' });
+
       return;
     }
     const user: any = await User.find({
       username: req.body.username,
     });
-
-    if (user && user._id) {
+    // console.log(user, user[0]._id);
+    console.log(user);
+    if (user.length > 0) {
       res.status(403).json({
         success: false,
         message: 'User already exists with this username',
@@ -36,7 +38,7 @@ export const createUser = async (
     }
     const salt = await bcrypt.genSalt(Number(config.SALT));
     const hashedPassword = await bcrypt.hash(req.body.password, salt);
-    const newUser = User.create({
+    const newUser = await User.create({
       username: req.body.username,
       password: hashedPassword,
     });
@@ -66,14 +68,15 @@ export const login = async (
       res.status(411).json({ success: false, message: 'Error in Inputs' });
       return;
     }
+
     const user: any = await User.findOne({
       username: req.body.username,
     });
     if (!user) {
-      res.status(204).json({ success: false, message: 'User doesnt exist' });
+      res.status(404).json({ success: false, message: 'User doesnt exist' });
       return;
     }
-
+    console.log(user);
     const isMatch = await bcrypt.compare(req.body.password, user.password);
     if (!isMatch) {
       res

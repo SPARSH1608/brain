@@ -16,6 +16,7 @@ const contentSchema = new Schema({
   text: { type: String },
   userId: { type: mongoose.Types.ObjectId, ref: 'User', required: true },
   tags: [{ type: String, required: true }],
+  mainTagId: { type: mongoose.Types.ObjectId, ref: 'Tag' },
   type: { type: String, required: true, enum: contentTypes },
   fileUrl: { type: String },
   info: { type: infoSchema, required: true },

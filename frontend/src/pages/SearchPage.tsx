@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
   X,
@@ -12,6 +12,9 @@ const SearchUI = () => {
   const [isDark, setIsDark] = useState(false);
   const [query, setQuery] = useState('');
   const [showHashtags, setShowHashtags] = useState(false);
+  const [hashtagSuggestions, setHashtagSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const popularHashtags = [
     { id: 1, tag: 'design', count: 2453 },
@@ -88,6 +91,33 @@ const SearchUI = () => {
       responses: 12,
     },
   ];
+
+  const filterHashtags = (input: string) => {
+    if (!input.startsWith('#')) return [];
+    const searchTerm = input.slice(1).toLowerCase();
+    return popularHashtags
+      .filter((tag) => tag.tag.toLowerCase().startsWith(searchTerm))
+      .slice(0, 5); // Limit to 5 suggestions
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setQuery(value);
+
+    if (value.startsWith('#')) {
+      const suggestions = filterHashtags(value);
+      setHashtagSuggestions(suggestions);
+      setShowSuggestions(suggestions.length > 0);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSuggestionClick = (tag: string) => {
+    setQuery(`#${tag}`);
+    setShowSuggestions(false);
+    inputRef.current?.focus();
+  };
 
   return (
     <div className={`${themeClasses.bg} min-h-screen flex flex-col`}>
@@ -183,11 +213,15 @@ const SearchUI = () => {
           <div className="relative flex items-center">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
+              ref={inputRef}
               type="text"
               value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setShowHashtags(e.target.value.startsWith('#'));
+              onChange={handleInputChange}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch();
+                  setShowSuggestions(false);
+                }
               }}
               placeholder="Ask me anything..."
               className={`w-full pl-12 pr-12 py-3 rounded-full border focus:outline-none focus:ring-2 focus:ring-purple-500 ${themeClasses.input}`}
@@ -201,6 +235,52 @@ const SearchUI = () => {
               </button>
             )}
           </div>
+
+          {/* Hashtag Suggestions Dropdown */}
+          {showSuggestions && (
+            <div
+              className={`
+              absolute 
+              z-10 
+              mt-1 
+              w-full 
+              rounded-lg 
+              border 
+              shadow-lg 
+              ${
+                isDark
+                  ? 'bg-zinc-800 border-zinc-700'
+                  : 'bg-white border-zinc-200'
+              }
+            `}
+            >
+              {hashtagSuggestions.map((tag, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSuggestionClick(tag)}
+                  className={`
+                    w-full 
+                    px-4 
+                    py-2 
+                    text-left 
+                    hover:bg-opacity-10 
+                    hover:bg-purple-500
+                    transition-colors
+                    ${
+                      index !== hashtagSuggestions.length - 1
+                        ? isDark
+                          ? 'border-b border-zinc-700'
+                          : 'border-b border-zinc-200'
+                        : ''
+                    }
+                    ${isDark ? 'text-zinc-200' : 'text-zinc-800'}
+                  `}
+                >
+                  #{tag}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

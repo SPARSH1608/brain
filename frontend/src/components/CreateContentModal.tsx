@@ -1,5 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { X, Upload, Link2 } from 'lucide-react';
+import axios from 'axios';
+import { config } from '@/config';
+import { redirect } from 'react-router';
 
 const FileUploader = ({
   isModalOpen,
@@ -14,6 +17,7 @@ const FileUploader = ({
     { name: string; size: number; progress: number }[]
   >([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [link, setLink] = useState('');
 
   // Theme-based color classes
   const themeClasses = {
@@ -110,7 +114,31 @@ const FileUploader = ({
   const removeFile = (fileName) => {
     setFiles((prev) => prev.filter((file) => file.name !== fileName));
   };
-
+  const addLink = () => {
+    if (!link) return;
+    console.log(link);
+    axios
+      .post(
+        `${config.BACKEND_URL}/user/content`,
+        {
+          input: link,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      )
+      .then((response) => {
+        // Handle success
+        setModalOpen(false);
+        redirect('/dashboard');
+      })
+      .catch((error) => {
+        // Handle error
+        console.error('Error adding link:', error);
+      });
+  };
   return (
     <div
       className={`
@@ -279,6 +307,8 @@ const FileUploader = ({
             <input
               type="text"
               placeholder="Add link to upload"
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
               className={`flex-1 bg-transparent border-none focus:outline-none text-sm ${
                 theme === 'dark' ? 'text-gray-300' : 'text-gray-900'
               }`}
@@ -298,7 +328,10 @@ const FileUploader = ({
           >
             Cancel
           </button>
-          <button className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors">
+          <button
+            onClick={addLink}
+            className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
+          >
             Confirm
           </button>
         </div>

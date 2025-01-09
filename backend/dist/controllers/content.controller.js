@@ -25,6 +25,8 @@ const upload_file_1 = require("../utils/upload.file");
 const generate_response_1 = require("../utils/generate.response");
 const vector_search_1 = require("../utils/vector-search");
 const server_config_1 = __importDefault(require("../config/server.config"));
+const mainTag_1 = require("../utils/mainTag");
+const tag_model_1 = require("../models/tag.model");
 const createContent = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     console.log('Create Content:', req.body);
     console.log('user', req.userId);
@@ -66,8 +68,10 @@ const createContent = (req, res, next) => __awaiter(void 0, void 0, void 0, func
         // Generate tags based on the content input
         const tags = yield (0, generate_tags_1.generateTags)(linkContent);
         console.log('Generated Tags:', tags);
-        // If generateTags returns a single string, split it into an array
+        const mainTags = yield (0, mainTag_1.mainGenerateTags)(linkContent);
+        const mainTagsArray = mainTags.split(',').map((tag) => tag.trim());
         const tagsArray = tags.split(',').map((tag) => tag.trim());
+        console.log('mainTagsArray', mainTagsArray);
         // Save the content in the database based on detected type
         const content = new content_model_1.Content({
             userId: req.userId,
@@ -84,6 +88,12 @@ const createContent = (req, res, next) => __awaiter(void 0, void 0, void 0, func
         });
         const savedContent = yield content.save();
         console.log('Content Saved', savedContent);
+        const mainTagsDocument = new tag_model_1.Tag({
+            contentId: content._id,
+            title: mainTagsArray,
+        });
+        yield content_model_1.Content.updateOne({ _id: savedContent._id }, { mainTagId: mainTagsDocument._id });
+        yield mainTagsDocument.save();
         const embeddings = yield (0, generate_embeddings_1.generateVoyageAIEmbeddings)(contentInput.input);
         if (embeddings) {
             // Step 3: Save the embeddings in the Embedding collection
@@ -115,7 +125,9 @@ const getContents = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     try {
         const userId = req.userId;
         console.log('userId', userId);
-        const content = yield content_model_1.Content.find({ userId: userId });
+        const content = yield content_model_1.Content.find({ userId: userId })
+            .populate('userId', 'username')
+            .populate('mainTagId', 'title');
         res.status(200).json({ success: true, data: content });
         return;
     }

@@ -19,8 +19,8 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const server_config_1 = __importDefault(require("../config/server.config"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const userSchema = zod_1.default.object({
-    username: zod_1.default.string().min(3).max(10),
-    password: zod_1.default.string().min(8).max(20),
+    username: zod_1.default.string().min(3),
+    password: zod_1.default.string().min(4),
 });
 const createUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -34,7 +34,9 @@ const createUser = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
         const user = yield user_model_1.User.find({
             username: req.body.username,
         });
-        if (user && user._id) {
+        // console.log(user, user[0]._id);
+        console.log(user);
+        if (user.length > 0) {
             res.status(403).json({
                 success: false,
                 message: 'User already exists with this username',
@@ -43,7 +45,7 @@ const createUser = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
         }
         const salt = yield bcrypt_1.default.genSalt(Number(server_config_1.default.SALT));
         const hashedPassword = yield bcrypt_1.default.hash(req.body.password, salt);
-        const newUser = user_model_1.User.create({
+        const newUser = yield user_model_1.User.create({
             username: req.body.username,
             password: hashedPassword,
         });
@@ -75,9 +77,10 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
             username: req.body.username,
         });
         if (!user) {
-            res.status(204).json({ success: false, message: 'User doesnt exist' });
+            res.status(404).json({ success: false, message: 'User doesnt exist' });
             return;
         }
+        console.log(user);
         const isMatch = yield bcrypt_1.default.compare(req.body.password, user.password);
         if (!isMatch) {
             res

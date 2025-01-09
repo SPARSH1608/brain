@@ -53,7 +53,9 @@ export const sharedLink = async (req: Request, res: Response) => {
       res.status(404).json({ success: false, message: 'User not found' });
       return;
     }
-    const content = await Content.find({ userId: userId });
+    const content = await Content.find({ userId: userId })
+      .populate('userId', 'username')
+      .populate('mainTagId', 'title');
     res.status(200).json({ success: true, data: content });
     return;
   } catch (error) {

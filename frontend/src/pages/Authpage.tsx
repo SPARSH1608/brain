@@ -18,30 +18,37 @@ const AuthPage = ({ type = 'signin' }) => {
       password: formData.password,
     });
     try {
-      if (type === 'signin') {
+      if (type === 'signup') {
         const res = await axios.post(
-          `${config.BACKEND_URL}/user/signin`,
+          `${config.BACKEND_URL}/user/signup`,
           formData
         );
         console.log(res);
         if (!res.data.success) {
-          setErrorMessage(res.data?.message);
+          setErrorMessage(res.data.message);
         } else {
           navigate('/signin');
         }
-      } else if (type === 'signup') {
-        const res = await axios.post(`${config.BACKEND_URL}/user/signup`, {
+        return;
+      } else if (type === 'signin') {
+        const res = await axios.post(`${config.BACKEND_URL}/user/signin`, {
           username: formData.username,
           password: formData.password,
         });
+        console.log(res);
         if (!res.data.success) {
-          setErrorMessage(res.data?.message);
+          setErrorMessage(res.data.message);
         } else {
           localStorage.setItem('token', res.data?.token);
           navigate('/dashboard');
         }
+        return;
       }
     } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.log(error.response?.data);
+        setErrorMessage(error.response?.data.message);
+      }
       console.error('Error during authentication:', error);
     }
   };
@@ -120,7 +127,25 @@ const AuthPage = ({ type = 'signin' }) => {
               </div>
             </div>
           </div>
-          <p>{errorMessage}</p>
+          <div className="flex items-center justify-center space-x-2 text-red-500 text-center min-h-[12px]">
+            {errorMessage && (
+              <>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <p className="text-sm font-medium">{errorMessage}</p>
+              </>
+            )}
+          </div>
           <button
             type="submit"
             className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition-colors"

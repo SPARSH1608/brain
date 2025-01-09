@@ -46,6 +46,7 @@ const contentSchema = new mongoose_1.Schema({
     text: { type: String },
     userId: { type: mongoose_1.default.Types.ObjectId, ref: 'User', required: true },
     tags: [{ type: String, required: true }],
+    mainTagId: { type: mongoose_1.default.Types.ObjectId, ref: 'Tag' },
     type: { type: String, required: true, enum: contentTypes },
     fileUrl: { type: String },
     info: { type: infoSchema, required: true },

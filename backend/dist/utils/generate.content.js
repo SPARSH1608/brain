@@ -8,12 +8,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateContent = generateContent;
+const server_config_1 = __importDefault(require("../config/server.config"));
 const Info_parser_1 = require("./Info.parser");
 const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, } = require('@google/generative-ai');
 const apiKey = process.env.GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI('AIzaSyCKvtC4RaI8KHUUYSVLXsfQT5UAYqsezQg');
+const genAI = new GoogleGenerativeAI(server_config_1.default.API_KEY);
 const model = genAI.getGenerativeModel({
     model: 'gemini-2.0-flash-exp',
 });

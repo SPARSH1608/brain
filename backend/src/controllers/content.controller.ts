@@ -12,6 +12,8 @@ import { generateResponse } from '../utils/generate.response';
 import { vectorSearch } from '../utils/vector-search';
 import config from '../config/server.config';
 import { parseApiResponse } from '../utils/Info.parser';
+import { mainGenerateTags } from '../utils/mainTag';
+import { Tag } from '../models/tag.model';
 
 interface Info {
   title: string;
@@ -64,10 +66,11 @@ export const createContent = async (
     // Generate tags based on the content input
     const tags = await generateTags(linkContent);
     console.log('Generated Tags:', tags);
+    const mainTags = await mainGenerateTags(linkContent);
+    const mainTagsArray = mainTags.split(',').map((tag: string) => tag.trim());
 
-    // If generateTags returns a single string, split it into an array
     const tagsArray = tags.split(',').map((tag: string) => tag.trim());
-
+    console.log('mainTagsArray', mainTagsArray);
     // Save the content in the database based on detected type
     const content = new Content({
       userId: req.userId,
@@ -85,7 +88,15 @@ export const createContent = async (
     });
     const savedContent = await content.save();
     console.log('Content Saved', savedContent);
-
+    const mainTagsDocument = new Tag({
+      contentId: content._id,
+      title: mainTagsArray,
+    });
+    await Content.updateOne(
+      { _id: savedContent._id },
+      { mainTagId: mainTagsDocument._id }
+    );
+    await mainTagsDocument.save();
     const embeddings = await generateVoyageAIEmbeddings(contentInput.input);
     if (embeddings) {
       // Step 3: Save the embeddings in the Embedding collection
@@ -119,7 +130,10 @@ export const getContents = async (
   try {
     const userId = req.userId;
     console.log('userId', userId);
-    const content = await Content.find({ userId: userId });
+    const content = await Content.find({ userId: userId })
+      .populate('userId', 'username')
+      .populate('mainTagId', 'title');
+
     res.status(200).json({ success: true, data: content });
     return;
   } catch (error) {

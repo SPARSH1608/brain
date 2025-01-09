@@ -4,6 +4,7 @@ import Layout from './Layout';
 import Dashboard from './pages/DashbaordPage'; // Ensure correct path
 import { SignIn, SignUp } from './pages/Authpage';
 import HomePage from './pages/HomePage';
+import SharedPage from './pages/SharedPage';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         />
         <Route path="signin" element={<SignIn />} />
         <Route path="signup" element={<SignUp />} />
+        <Route path="/shared/:id" element={<SharedPage />} />
       </Routes>
     </BrowserRouter>
   );

@@ -64,7 +64,9 @@ const sharedLink = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             res.status(404).json({ success: false, message: 'User not found' });
             return;
         }
-        const content = yield content_model_1.Content.find({ userId: userId });
+        const content = yield content_model_1.Content.find({ userId: userId })
+            .populate('userId', 'username')
+            .populate('mainTagId', 'title');
         res.status(200).json({ success: true, data: content });
         return;
     }

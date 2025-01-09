@@ -1,3 +1,4 @@
+import config from '../config/server.config';
 import { parseApiResponse } from './Info.parser';
 
 const {
@@ -7,7 +8,7 @@ const {
 } = require('@google/generative-ai');
 
 const apiKey = process.env.GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI('AIzaSyCKvtC4RaI8KHUUYSVLXsfQT5UAYqsezQg');
+const genAI = new GoogleGenerativeAI(config.API_KEY);
 
 const model = genAI.getGenerativeModel({
   model: 'gemini-2.0-flash-exp',

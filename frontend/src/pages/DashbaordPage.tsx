@@ -20,6 +20,15 @@ import FileUploader from '@/components/CreateContentModal';
 import ShareBrain from '@/components/ShareBrain';
 import { useNavigate } from 'react-router';
 import UniversalCard from '../components/UniversalCard';
+import { config } from '@/config';
+import axios from 'axios';
+
+interface User {
+  userId: {
+    username: string;
+  };
+}
+
 const cards = [
   {
     title: 'Top 10 JavaScript Tips for Beginners',
@@ -55,9 +64,9 @@ const cards = [
     title: 'How to Save Taxes in 2024: Legal and Effective Strategies',
     mediaUrl: 'https://i.imgur.com/tax-tips.jpg',
     hashtags: ['#TaxSaving', '#Finance', '#India'],
-    className: 'card-finance',
   },
 ];
+
 const Button = ({
   children,
   variant = 'default',
@@ -70,8 +79,8 @@ const Button = ({
       theme === 'dark' ? 'bg-purple-600 text-white' : 'bg-blue-500 text-white',
     outline:
       theme === 'dark'
-        ? 'border border-gray-600 hover:bg-[#BFDBF847]'
-        : 'border border-gray-300 hover:bg-gray-200',
+        ? 'bg-zinc-900 text-zinc-100 border-zinc-800 hover:bg-zinc-800'
+        : 'bg-white text-zinc-900 border-zinc-200 hover:bg-zinc-50',
   };
 
   return (
@@ -94,6 +103,8 @@ const Dashboard = () => {
   const [query, setQuery] = useState('');
   const [showHashtags, setShowHashtags] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [content, setContent] = useState<any[]>([]);
   const navigate = useNavigate();
   const popularHashtags = [
     { id: 1, tag: 'design', count: 2453 },
@@ -107,10 +118,10 @@ const Dashboard = () => {
     console.log('hi');
     setShowHashtags(query.startsWith('#'));
   }, [query]);
+
   const handleQueryChange = (e) => {
     const newQuery = e.target.value;
     setQuery(newQuery);
-
     // Only show hashtags when query starts with '#'
     setShowHashtags(newQuery.startsWith('#'));
   };
@@ -181,7 +192,10 @@ const Dashboard = () => {
         <div className="flex items-center gap-2 mb-8">
           <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-500 rounded-xl" />
           <div className="flex-1">
-            <div className="font-medium">Sparsh Dashboard</div>
+            <div className="font-medium">
+              {user?.userId?.username.charAt(0).toUpperCase()}
+              {user?.userId?.username.slice(1)} Dashboard
+            </div>
             <div className={textColorClass}>sparshgoelk@gmail.com</div>
           </div>
         </div>
@@ -229,6 +243,44 @@ const Dashboard = () => {
     );
   };
 
+  const getUser = async () => {
+    try {
+      const res = await axios.get(`${config.BACKEND_URL}/user/content`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (!res?.data?.success) {
+        //toast
+        console.log(res.data.message);
+      } else {
+        setUser(res.data.data[0]);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const getContent = async () => {
+    try {
+      const res = await axios.get(`${config.BACKEND_URL}/user/content`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (!res?.data?.success) {
+        console.log(res.data.message);
+      } else {
+        setContent(res.data.data);
+        console.log(res.data.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    getUser();
+    getContent();
+  }, [isFolderOpen, isShareOpen]);
   return (
     <>
       <div className="absolute top-0 left-0 w-full z-50">
@@ -243,6 +295,7 @@ const Dashboard = () => {
           <ShareBrain
             theme={isDark ? 'dark' : 'light'}
             isShareOpen={isShareOpen}
+            id={user?.userId?._id}
             setIsShareOpen={setIsShareOpen}
           />
         )}
@@ -250,11 +303,12 @@ const Dashboard = () => {
       <div
         className={`flex h-screen ${themeClass} transition-colors duration-200`}
       >
-        <div
+        <button
           className={`fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden ${
             isSidebarOpen ? 'block' : 'hidden'
           }`}
           onClick={() => setIsSidebarOpen(false)}
+          aria-label="Close sidebar"
         />
 
         <div
@@ -270,13 +324,18 @@ const Dashboard = () => {
             <div className="fixed"></div>
             <div className="flex flex-row md:flex-row md:items-center justify-between gap-4 mb-8 ">
               {' '}
-              <button
-                onClick={() => setIsSidebarOpen(true)}
-                className="p-2 rounded-lg hover:bg-gray-800 lg:hidden"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-              <h1 className="text-2xl font-semibold ">Welcome back</h1>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="p-2 rounded-lg hover:bg-gray-800 lg:hidden"
+                >
+                  <Menu className="w-6 h-6" />
+                </button>
+                <h1 className="text-2xl font-semibold text-left ">
+                  Welcome back {user?.userId?.username.charAt(0).toUpperCase()}
+                  {user?.userId?.username.slice(1)}
+                </h1>
+              </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center">
                   <button
@@ -308,7 +367,7 @@ const Dashboard = () => {
             {!showSearch ? (
               <>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-12 mb-8">
-                  <span onClick={() => setModalOpen(true)}>
+                  <button onClick={() => setModalOpen(true)}>
                     <Button
                       variant="outline"
                       theme={isDark ? 'dark' : 'light'}
@@ -317,8 +376,8 @@ const Dashboard = () => {
                       <Plus className="w-4 h-4" />
                       <span className="">New Content</span>
                     </Button>
-                  </span>
-                  <span onClick={() => setIsShareOpen(true)}>
+                  </button>
+                  <button onClick={() => setIsShareOpen(true)}>
                     <Button
                       variant="outline"
                       theme={isDark ? 'dark' : 'light'}
@@ -327,17 +386,18 @@ const Dashboard = () => {
                       <ShareIcon className="w-4 h-4" />
                       <span className="">Share Brain</span>
                     </Button>
-                  </span>
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4  ">
-                  {cards.map((card) => (
-                    <div>
+                  {content.map((card) => (
+                    <div key={card._id}>
                       <UniversalCard
-                        title={card.title}
-                        mediaUrl={card.mediaUrl}
-                        hashtags={card.hashtags}
-                        className=""
+                        id={card._id}
+                        description={card.info.description}
+                        title={card.info.title}
+                        mediaUrl={card.link}
+                        hashtags={card.mainTagId.title}
                         theme={isDark ? 'dark' : 'light'}
                       />
                     </div>

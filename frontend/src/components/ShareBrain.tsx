@@ -1,14 +1,40 @@
+import { config } from '@/config';
+import axios from 'axios';
 import { Copy } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const ShareBrain = ({
+  id,
   isShareOpen,
   setIsShareOpen,
   theme = 'dark', // Add theme prop with default dark
 }: {
+  id: string;
   isShareOpen: boolean;
   setIsShareOpen: (open: boolean) => void;
   theme?: 'light' | 'dark';
 }) => {
+  const [link, setLink] = useState('');
+  useEffect(() => {
+    const fetchLink = async () => {
+      try {
+        const response = await axios.post(
+          `${config.BACKEND_URL}/user/brain/share`,
+          { share: true },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          }
+        );
+        setLink(response.data.data);
+      } catch (error) {
+        console.error('Error fetching share link:', error);
+        // Handle error appropriately
+      }
+    };
+    fetchLink();
+  }, [id]);
   // Theme-based color classes
   const themeClasses = {
     backdrop: {
@@ -73,14 +99,14 @@ const ShareBrain = ({
           >
             Share Link:{' '}
             <a
-              href=""
+              href={`${config.FRONTEND_URL}/shared/${link}`}
               className={`
                 font-medium 
                 ${themeClasses.link[theme]}
                 transition-colors
               `}
             >
-              http://localhost:5173/adbbabfiabfabfaebfajfb
+              {`${config.FRONTEND_URL}/shared/${link}`}
             </a>
           </p>
         </div>
@@ -101,6 +127,11 @@ const ShareBrain = ({
         {/* Copy Link Button */}
         <div className="flex space-x-3 mb-4">
           <button
+            onClick={() => {
+              navigator.clipboard.writeText(
+                `${config.FRONTEND_URL}/shared/${link}`
+              );
+            }}
             className={`
               flex-1 py-2 rounded-lg 
               flex items-center justify-center 
@@ -137,15 +168,6 @@ const ShareBrain = ({
             `}
           >
             Cancel
-          </button>
-          <button
-            className={`
-              px-4 py-2 text-sm rounded-lg 
-              ${themeClasses.button[theme]}
-              transition-colors
-            `}
-          >
-            Share
           </button>
         </div>
       </div>
