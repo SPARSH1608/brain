@@ -14,56 +14,64 @@ import config from '../config/server.config';
 import { parseApiResponse } from '../utils/Info.parser';
 import { mainGenerateTags } from '../utils/mainTag';
 import { Tag } from '../models/tag.model';
+import { uploadRouter } from '../uploadthing';
+import { createUploadthing } from 'uploadthing/server';
 
 interface Info {
   title: string;
   description: string;
   summary?: string;
 }
+
+// Create an endpoint handler
+const uploadthingHandler = createUploadthing();
+
 export const createContent = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  console.log('Create Content:', req.body);
-  console.log('user', req.userId);
-  const contentInput = req.body;
-  const contentType = detectContentType(contentInput.input);
-  console.log('contentType', contentType);
-  let linkContent: Info | null | undefined;
-  let fileUrl;
-  if (
-    contentType === 'image' ||
-    contentType === 'video' ||
-    (contentType === 'audio' && contentInput.file)
-  ) {
-    console.log('Uploading file...');
-    fileUrl = await upload(contentInput.file); // Upload the file using the utility function
-    console.log('File uploaded. File URL:', fileUrl);
-
-    // Use the file URL to generate content
-    linkContent = await generateContent(fileUrl);
-  } else if (contentType === 'link' && contentInput.input.includes('youtu')) {
-    const videoId = extractVideoId(contentInput.input);
-    console.log('YouTube Video ID:', videoId);
-    if (videoId) {
-      // Fetch video info using YouTube API
-      linkContent = await displayVideoInfo(contentInput.input);
-      console.log('YouTube Video Info:', linkContent);
-    }
-  } else {
-    // Otherwise, handle other types of links (image, video, audio, webpage)
-    linkContent = await generateContent(contentInput.input);
-    console.log('Link Content:', linkContent);
-  }
-  if (linkContent === null) {
-    res.status(400).json({
-      message: 'Link content not found',
-    });
-    return;
-  }
   try {
+    const file = req.file;
+    const isLink = req.body.isLink === 'true';
+    const input = req.body.input;
+    console.log(file, input, isLink);
+    let fileUrl;
+    let linkContent: Info | null | undefined;
+
+    if (!isLink && file) {
+      // Handle file upload
+      const fileData = {
+        name: file.originalname,
+        type: file.mimetype,
+        size: file.size,
+        buffer: file.buffer,
+      };
+
+      const response = uploadRouter.singleMediaUpload.onUploadComplete({
+        input: fileData,
+      });
+
+      fileUrl = response.url;
+      linkContent = await generateContent(fileUrl);
+    } else if (isLink) {
+      // Handle link content
+      if (input.includes('youtu')) {
+        linkContent = await displayVideoInfo(input);
+      } else {
+        linkContent = await generateContent(input);
+      }
+    }
+
+    // if (linkContent === null) {
+    //   res.status(400).json({
+    //     message: 'Link content not found',
+    //   });
+    //   return;
+    // }
+
     // Generate tags based on the content input
+    console.log('linkcontet', linkContent);
     const tags = await generateTags(linkContent);
     console.log('Generated Tags:', tags);
     const mainTags = await mainGenerateTags(linkContent);
@@ -74,14 +82,14 @@ export const createContent = async (
     // Save the content in the database based on detected type
     const content = new Content({
       userId: req.userId,
-      type: contentType,
-      text: contentType === 'text' ? contentInput.input : '', // Only if type is text
-      link: contentType === 'link' ? contentInput.input : '', // Only if type is a link
+      type: detectContentType(linkContent),
+      text: detectContentType(linkContent) === 'text' ? input : '', // Only if type is text
+      link: detectContentType(linkContent) === 'link' ? input : '', // Only if type is a link
       fileUrl:
-        contentType === 'image' ||
-        contentType === 'video' ||
-        contentType === 'audio'
-          ? contentInput.input
+        detectContentType(linkContent) === 'image' ||
+        detectContentType(linkContent) === 'video' ||
+        detectContentType(linkContent) === 'audio'
+          ? input
           : '', // Only for media files
       tags: tagsArray, // Save the tags array
       info: linkContent,
@@ -97,7 +105,7 @@ export const createContent = async (
       { mainTagId: mainTagsDocument._id }
     );
     await mainTagsDocument.save();
-    const embeddings = await generateVoyageAIEmbeddings(contentInput.input);
+    const embeddings = await generateVoyageAIEmbeddings(input);
     if (embeddings) {
       // Step 3: Save the embeddings in the Embedding collection
       const embedding = new Embedding({
@@ -115,11 +123,8 @@ export const createContent = async (
       console.log('Error generating embeddings');
     }
   } catch (error) {
-    console.error('Error creating content:', error);
-    res.status(500).json({
-      message: 'Internal server error',
-    });
-    return;
+    console.error('Error:', error);
+    res.status(500).json({ message: 'Content creation failed' });
   }
 };
 

@@ -6,6 +6,7 @@ import { Trash2 } from 'lucide-react';
 import DeleteModal from './DeleteModal';
 import axios from 'axios';
 import { config } from '@/config';
+import { useParams } from 'react-router';
 
 const MediaEmbed = ({ url }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -20,7 +21,7 @@ const MediaEmbed = ({ url }) => {
     return 'default';
   };
 
-  const getYouTubeId = (url) => {
+  const getYouTubeId = (url: string) => {
     const regex =
       /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
     const match = url.match(regex);
@@ -122,7 +123,9 @@ const UniversalCard = ({
   const [contentId, setContentId] = useState('');
   const [showTooltip, setShowTooltip] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-
+  const params = useParams<{ shared?: string }>();
+  const isShared = params.shared !== undefined;
+  console.log(isShared);
   return (
     <>
       <Card
@@ -155,12 +158,13 @@ const UniversalCard = ({
             className={`
                 w-[300px]
                 text-left
-                
-                text-xl 
+                md:text-md
+                lg:text-md 
                 font-semibold 
                 tracking-tight 
                 line-clamp-2
                 cursor-pointer
+                lg:w-[280px]
                 ${theme === 'dark' ? 'text-zinc-100' : 'text-zinc-900'}
               `}
           >
@@ -206,14 +210,14 @@ const UniversalCard = ({
               </div>
             </div>
           )}
-
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setContentId(id);
-              setShowDeleteModal(true);
-            }}
-            className={`
+          {isShared && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setContentId(id);
+                setShowDeleteModal(true);
+              }}
+              className={`
                 p-2
                 rounded-full
                 transition-colors
@@ -227,10 +231,11 @@ const UniversalCard = ({
                     : 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-700'
                 }
               `}
-            aria-label="Delete card"
-          >
-            <Trash2 size={18} />
-          </button>
+              aria-label="Delete card"
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
         </CardHeader>
 
         <CardContent className="p-4 flex flex-col flex-1 min-h-0">

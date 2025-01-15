@@ -4,7 +4,8 @@ import FormData from 'form-data';
 import config from '../config/server.config';
 
 // Function to upload files
-export async function upload(file: File): Promise<string> {
+export async function upload(file: any): Promise<string> {
+  console.log('upload', file);
   try {
     // Step 1: Get the upload URL from Uploadthing
     const uploadSessionResponse = await axios.post(

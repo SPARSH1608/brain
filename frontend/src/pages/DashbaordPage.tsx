@@ -29,44 +29,6 @@ interface User {
   };
 }
 
-const cards = [
-  {
-    title: 'Top 10 JavaScript Tips for Beginners',
-    mediaUrl: 'https://www.youtube.com/watch?v=xyz123',
-    hashtags: ['#JavaScript', '#WebDevelopment', '#CodingTips'],
-    className: 'card-highlight',
-  },
-  {
-    title: "Understanding React's useEffect Hook",
-    mediaUrl: 'https://twitter.com/reactjs/status/123456789',
-    hashtags: ['#ReactJS', '#Frontend', '#Hooks'],
-    className: 'card-react',
-  },
-  {
-    title: 'MERN Stack Project Showcase: Brain_Vault',
-    mediaUrl: 'https://i.imgur.com/project-demo.jpg',
-    hashtags: ['#MERN', '#FullStack', '#Project'],
-    className: 'card-project',
-  },
-  {
-    title: 'Fitness App Using MediaPipe: Demo Video',
-    mediaUrl: 'https://example.com/fitness-demo.mp4',
-    hashtags: ['#AI', '#FitnessApp', '#MediaPipe'],
-    className: 'card-fitness',
-  },
-  {
-    title: 'Master Time Management with the Eisenhower Matrix',
-    mediaUrl: 'https://www.youtube.com/watch?v=matrix-tips',
-    hashtags: ['#Productivity', '#TimeManagement', '#EisenhowerMatrix'],
-    className: 'card-productivity',
-  },
-  {
-    title: 'How to Save Taxes in 2024: Legal and Effective Strategies',
-    mediaUrl: 'https://i.imgur.com/tax-tips.jpg',
-    hashtags: ['#TaxSaving', '#Finance', '#India'],
-  },
-];
-
 const Button = ({
   children,
   variant = 'default',

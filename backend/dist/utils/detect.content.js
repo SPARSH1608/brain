@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.detectContentType = detectContentType;
 function detectContentType(input) {
     // Check if the input is a valid URL
+    console.log(input);
     const urlPattern = /^(https?:\/\/)?([a-z0-9-]+(\.[a-z0-9-]+)+)(\/[^\s]*)?$/i;
     if (urlPattern.test(input)) {
         return 'link'; // It's a URL/link
@@ -11,13 +12,13 @@ function detectContentType(input) {
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'];
     const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv'];
     const audioExtensions = ['.mp3', '.wav', '.aac', '.ogg'];
-    if (imageExtensions.some((ext) => input.toLowerCase().endsWith(ext))) {
+    if (input.mimetype.startsWith('image/')) {
         return 'image'; // It's an image
     }
-    if (videoExtensions.some((ext) => input.toLowerCase().endsWith(ext))) {
+    if (input.mimetype.startsWith('video/')) {
         return 'video'; // It's a video
     }
-    if (audioExtensions.some((ext) => input.toLowerCase().endsWith(ext))) {
+    if (input.mimetype.startsWith('audio/')) {
         return 'audio'; // It's audio
     }
     // If none of the above, assume it's text

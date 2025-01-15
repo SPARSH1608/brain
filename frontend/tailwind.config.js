@@ -4,6 +4,9 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      backgroundImage: {
+        'background-image': "url('/assets/images/background.jpg')",
+      },
       colors: {
         Gray: {
           200: '#f9fbfc',

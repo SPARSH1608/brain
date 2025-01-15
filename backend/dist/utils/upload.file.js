@@ -19,6 +19,7 @@ const server_config_1 = __importDefault(require("../config/server.config"));
 // Function to upload files
 function upload(file) {
     return __awaiter(this, void 0, void 0, function* () {
+        console.log('upload', file);
         try {
             // Step 1: Get the upload URL from Uploadthing
             const uploadSessionResponse = yield axios_1.default.post('http://localhost:3000/api/uploadthing/fileUploader', {

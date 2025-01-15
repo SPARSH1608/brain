@@ -21,51 +21,54 @@ const generate_content_1 = require("../utils/generate.content");
 const detect_content_1 = require("../utils/detect.content");
 const generate_tags_1 = require("../utils/generate.tags");
 const generate_embeddings_1 = require("../utils/generate.embeddings");
-const upload_file_1 = require("../utils/upload.file");
 const generate_response_1 = require("../utils/generate.response");
 const vector_search_1 = require("../utils/vector-search");
 const server_config_1 = __importDefault(require("../config/server.config"));
 const mainTag_1 = require("../utils/mainTag");
 const tag_model_1 = require("../models/tag.model");
+const uploadthing_1 = require("../uploadthing");
+const server_1 = require("uploadthing/server");
+// Create an endpoint handler
+const uploadthingHandler = (0, server_1.createUploadthing)();
 const createContent = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log('Create Content:', req.body);
-    console.log('user', req.userId);
-    const contentInput = req.body;
-    const contentType = (0, detect_content_1.detectContentType)(contentInput.input);
-    console.log('contentType', contentType);
-    let linkContent;
-    let fileUrl;
-    if (contentType === 'image' ||
-        contentType === 'video' ||
-        (contentType === 'audio' && contentInput.file)) {
-        console.log('Uploading file...');
-        fileUrl = yield (0, upload_file_1.upload)(contentInput.file); // Upload the file using the utility function
-        console.log('File uploaded. File URL:', fileUrl);
-        // Use the file URL to generate content
-        linkContent = yield (0, generate_content_1.generateContent)(fileUrl);
-    }
-    else if (contentType === 'link' && contentInput.input.includes('youtu')) {
-        const videoId = (0, get_yt_content_1.extractVideoId)(contentInput.input);
-        console.log('YouTube Video ID:', videoId);
-        if (videoId) {
-            // Fetch video info using YouTube API
-            linkContent = yield (0, get_yt_content_1.displayVideoInfo)(contentInput.input);
-            console.log('YouTube Video Info:', linkContent);
-        }
-    }
-    else {
-        // Otherwise, handle other types of links (image, video, audio, webpage)
-        linkContent = yield (0, generate_content_1.generateContent)(contentInput.input);
-        console.log('Link Content:', linkContent);
-    }
-    if (linkContent === null) {
-        res.status(400).json({
-            message: 'Link content not found',
-        });
-        return;
-    }
     try {
+        const file = req.file;
+        const isLink = req.body.isLink === 'true';
+        const input = req.body.input;
+        console.log(file, input, isLink);
+        let fileUrl;
+        let linkContent;
+        if (!isLink && file) {
+            // Handle file upload
+            const fileData = {
+                name: file.originalname,
+                type: file.mimetype,
+                size: file.size,
+                buffer: file.buffer,
+            };
+            const response = uploadthing_1.uploadRouter.singleMediaUpload.onUploadComplete({
+                input: fileData,
+            });
+            fileUrl = response.url;
+            linkContent = yield (0, generate_content_1.generateContent)(fileUrl);
+        }
+        else if (isLink) {
+            // Handle link content
+            if (input.includes('youtu')) {
+                linkContent = yield (0, get_yt_content_1.displayVideoInfo)(input);
+            }
+            else {
+                linkContent = yield (0, generate_content_1.generateContent)(input);
+            }
+        }
+        // if (linkContent === null) {
+        //   res.status(400).json({
+        //     message: 'Link content not found',
+        //   });
+        //   return;
+        // }
         // Generate tags based on the content input
+        console.log('linkcontet', linkContent);
         const tags = yield (0, generate_tags_1.generateTags)(linkContent);
         console.log('Generated Tags:', tags);
         const mainTags = yield (0, mainTag_1.mainGenerateTags)(linkContent);
@@ -75,13 +78,13 @@ const createContent = (req, res, next) => __awaiter(void 0, void 0, void 0, func
         // Save the content in the database based on detected type
         const content = new content_model_1.Content({
             userId: req.userId,
-            type: contentType,
-            text: contentType === 'text' ? contentInput.input : '', // Only if type is text
-            link: contentType === 'link' ? contentInput.input : '', // Only if type is a link
-            fileUrl: contentType === 'image' ||
-                contentType === 'video' ||
-                contentType === 'audio'
-                ? contentInput.input
+            type: (0, detect_content_1.detectContentType)(linkContent),
+            text: (0, detect_content_1.detectContentType)(linkContent) === 'text' ? input : '', // Only if type is text
+            link: (0, detect_content_1.detectContentType)(linkContent) === 'link' ? input : '', // Only if type is a link
+            fileUrl: (0, detect_content_1.detectContentType)(linkContent) === 'image' ||
+                (0, detect_content_1.detectContentType)(linkContent) === 'video' ||
+                (0, detect_content_1.detectContentType)(linkContent) === 'audio'
+                ? input
                 : '', // Only for media files
             tags: tagsArray, // Save the tags array
             info: linkContent,
@@ -94,7 +97,7 @@ const createContent = (req, res, next) => __awaiter(void 0, void 0, void 0, func
         });
         yield content_model_1.Content.updateOne({ _id: savedContent._id }, { mainTagId: mainTagsDocument._id });
         yield mainTagsDocument.save();
-        const embeddings = yield (0, generate_embeddings_1.generateVoyageAIEmbeddings)(contentInput.input);
+        const embeddings = yield (0, generate_embeddings_1.generateVoyageAIEmbeddings)(input);
         if (embeddings) {
             // Step 3: Save the embeddings in the Embedding collection
             const embedding = new embedding_model_1.Embedding({
@@ -113,11 +116,8 @@ const createContent = (req, res, next) => __awaiter(void 0, void 0, void 0, func
         }
     }
     catch (error) {
-        console.error('Error creating content:', error);
-        res.status(500).json({
-            message: 'Internal server error',
-        });
-        return;
+        console.error('Error:', error);
+        res.status(500).json({ message: 'Content creation failed' });
     }
 });
 exports.createContent = createContent;

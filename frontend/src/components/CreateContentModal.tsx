@@ -75,6 +75,7 @@ const FileUploader = ({
     ]);
 
     // Simulate upload progress
+
     newFiles.forEach((file) => {
       simulateUpload(file.name);
     });
@@ -103,6 +104,7 @@ const FileUploader = ({
         name: file.name,
         size: file.size,
         progress: 0,
+        file: file,
       })),
     ]);
 
@@ -114,42 +116,66 @@ const FileUploader = ({
   const removeFile = (fileName) => {
     setFiles((prev) => prev.filter((file) => file.name !== fileName));
   };
-  const addLink = () => {
-    if (!link) return;
-    console.log(link);
-    axios
-      .post(
-        `${config.BACKEND_URL}/user/content`,
-        {
-          input: link,
-        },
-        {
+  const addContent = async () => {
+    try {
+      if (link) {
+        // Handle link submission
+        await axios.post(
+          `${config.BACKEND_URL}/user/content`,
+          {
+            input: link,
+            isLink: true,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          }
+        );
+      } else if (files.length > 0) {
+        console.log(files);
+        // Handle file submission
+        const formData = new FormData();
+        files.forEach((fileObj) => {
+          if (fileObj.file) {
+            formData.append('files', fileObj.file);
+          }
+        });
+        formData.append('isLink', false);
+        console.log(formData);
+        await axios.post(`${config.BACKEND_URL}/user/content`, formData, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'multipart/form-data',
           },
-        }
-      )
-      .then((response) => {
-        // Handle success
-        setModalOpen(false);
-        redirect('/dashboard');
-      })
-      .catch((error) => {
-        // Handle error
-        console.error('Error adding link:', error);
-      });
+          onUploadProgress: (progressEvent) => {
+            const progress = Math.round(
+              (progressEvent.loaded * 100) / (progressEvent.total ?? 1)
+            );
+            setFiles((prev) => prev.map((file) => ({ ...file, progress })));
+          },
+        });
+      }
+
+      // Handle success
+      setModalOpen(false);
+      window.location.href = '/dashboard'; // Using window.location instead of redirect
+    } catch (error) {
+      console.error('Error adding content:', error);
+      // Handle error (you might want to show an error message to the user)
+    }
   };
   return (
     <div
       className={`
         fixed inset-0 z-50 flex items-center justify-center 
-        ${themeClasses.modal[theme]}
+        ${themeClasses.modal[theme]} 
       `}
     >
       <div
         className={`
           w-full max-w-md rounded-xl p-6 border 
-          ${themeClasses.container[theme]}
+          ${themeClasses.container[theme]} 
         `}
       >
         <h2
@@ -168,7 +194,7 @@ const FileUploader = ({
           onDrop={handleDrop}
           className={`
             border-2 border-dashed rounded-xl p-8
-            ${themeClasses.dropzone[theme]}
+            ${themeClasses.dropzone[theme]} ${link ? 'bg-gray-400' : ''}
             transition-colors duration-200
           `}
         >
@@ -188,8 +214,12 @@ const FileUploader = ({
               Drag and drop files here, or{' '}
               <label
                 className={`
-                  text-purple-500 hover:text-purple-400 cursor-pointer
-                  ${theme === 'light' ? 'text-purple-600' : ''}
+                  ${
+                    link
+                      ? 'text-black cursor-not-allowed'
+                      : 'text-purple-500 hover:text-purple-400 cursor-pointer'
+                  }
+                  ${theme === 'light' && !link ? 'text-purple-600' : ''}
                 `}
               >
                 browse
@@ -197,6 +227,7 @@ const FileUploader = ({
                   type="file"
                   multiple
                   className="hidden"
+                  disabled={!!link}
                   onChange={handleFileInput}
                 />
               </label>
@@ -213,7 +244,7 @@ const FileUploader = ({
         </div>
 
         {/* File list */}
-        {files.length > 0 && (
+        {!link && files.length > 0 && (
           <div className="mt-4 space-y-3">
             <div
               className={`
@@ -297,21 +328,28 @@ const FileUploader = ({
         )}
 
         {/* Import from link */}
+
         <div className="mt-4 pt-4 border-t">
-          <div className="flex items-center space-x-2 px-3 py-2 rounded-lg border">
+          <div
+            className={`flex items-center space-x-2 px-3 py-2 rounded-lg border ${
+              files.length > 0 ? 'cursor-not-allowed bg-gray-600' : ''
+            }`}
+          >
             <Link2
               className={`w-4 h-4 ${
                 theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
               }`}
             />
+
             <input
               type="text"
               placeholder="Add link to upload"
               value={link}
+              disabled={files.length > 0}
               onChange={(e) => setLink(e.target.value)}
               className={`flex-1 bg-transparent border-none focus:outline-none text-sm ${
                 theme === 'dark' ? 'text-gray-300' : 'text-gray-900'
-              }`}
+              } `}
             />
           </div>
         </div>
@@ -329,7 +367,7 @@ const FileUploader = ({
             Cancel
           </button>
           <button
-            onClick={addLink}
+            onClick={addContent}
             className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
           >
             Confirm
