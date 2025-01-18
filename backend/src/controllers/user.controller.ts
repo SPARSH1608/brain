@@ -4,6 +4,7 @@ import { NextFunction, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import config from '../config/server.config';
 import jwt from 'jsonwebtoken';
+import { contentCount } from '../models/content.count.model';
 
 const userSchema = zod.object({
   username: zod.string().min(3),
@@ -29,6 +30,7 @@ export const createUser = async (
     });
     // console.log(user, user[0]._id);
     console.log(user);
+
     if (user.length > 0) {
       res.status(403).json({
         success: false,
@@ -41,6 +43,15 @@ export const createUser = async (
     const newUser = await User.create({
       username: req.body.username,
       password: hashedPassword,
+    });
+    await contentCount.create({
+      userId: newUser._id,
+      images: [],
+      links: [],
+      audio: [],
+      videos: [],
+      twitter: [],
+      youtube: [],
     });
     res
       .status(200)
@@ -91,6 +102,27 @@ export const login = async (
     return;
   } catch (error) {
     console.error('Error signing in:', error);
+    res.status(500).json({
+      message: 'Internal server error',
+    });
+    return;
+  }
+};
+export const getUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.userId;
+    const user = await User.findOne({ _id: userId });
+    if (!user) {
+      res.status(404).json({ success: false, message: 'User not found' });
+      return;
+    }
+    res.status(200).json({ success: true, user });
+  } catch (error) {
+    console.log(error);
     res.status(500).json({
       message: 'Internal server error',
     });

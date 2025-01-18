@@ -245,9 +245,10 @@ const SharedPage = () => {
                     id={'undefined'}
                     title={card.info.title}
                     description={card.info.description}
-                    mediaUrl={card.link}
+                    mediaUrl={card.link || card.fileUrl}
                     hashtags={card.mainTagId.title}
                     theme={isDark ? 'dark' : 'light'}
+                    isShared={true}
                   />
                 </div>
               ))}

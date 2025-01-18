@@ -24,9 +24,8 @@ import { config } from '@/config';
 import axios from 'axios';
 
 interface User {
-  userId: {
-    username: string;
-  };
+  username: string;
+  _id: string;
 }
 
 const Button = ({
@@ -38,11 +37,13 @@ const Button = ({
 }) => {
   const variants = {
     default:
-      theme === 'dark' ? 'bg-purple-600 text-white' : 'bg-blue-500 text-white',
+      theme === 'dark'
+        ? 'bg-zinc-800 text-zinc-100 hover:bg-zinc-700'
+        : 'bg-zinc-100 text-zinc-800 hover:bg-zinc-200',
     outline:
       theme === 'dark'
-        ? 'bg-zinc-900 text-zinc-100 border-zinc-800 hover:bg-zinc-800'
-        : 'bg-white text-zinc-900 border-zinc-200 hover:bg-zinc-50',
+        ? 'bg-transparent border border-zinc-700 text-zinc-100 hover:bg-zinc-700'
+        : 'bg-transparent border border-zinc-300 text-zinc-800 hover:bg-zinc-200',
   };
 
   return (
@@ -58,7 +59,7 @@ const Button = ({
 const Dashboard = () => {
   const [isDark, setIsDark] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isFolderOpen, setIsFolderOpen] = useState(false);
+  const [isFolderOpen, setIsFolderOpen] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -68,6 +69,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [content, setContent] = useState<any[]>([]);
   const navigate = useNavigate();
+  const [count, setCount] = useState([]);
   const popularHashtags = [
     { id: 1, tag: 'design', count: 2453 },
     { id: 2, tag: 'development', count: 1832 },
@@ -103,12 +105,32 @@ const Dashboard = () => {
   };
 
   const folders = [
-    { id: 1, label: 'View all', count: 48 },
-    { id: 2, label: 'Youtube', count: 6 },
-    { id: 3, label: 'Twitter', count: 4 },
-    { id: 4, label: 'Images', count: 22 },
-    { id: 5, label: 'Videos', count: 14 },
-    { id: 6, label: 'Audios', count: 14 },
+    {
+      id: 1,
+      label: 'View All',
+      count: count[0]?.links?.length,
+      onClick: () => getContent(''),
+    },
+    {
+      id: 2,
+      label: 'Youtube',
+      count: count[0]?.youtube?.length,
+      onClick: () => getContent('youtube'),
+    },
+    {
+      id: 3,
+      label: 'Twitter',
+      count: count[0]?.twitter?.length,
+      onClick: () => getContent('twitter'),
+    },
+    {
+      id: 4,
+      label: 'Images',
+      count: count[0]?.images?.length,
+      onClick: () => getContent('images'),
+    },
+    { id: 5, label: 'Videos', count: 'Coming Soon' },
+    { id: 6, label: 'Audios', count: 'Coming Soon' },
   ];
 
   const searchResults = [
@@ -137,15 +159,17 @@ const Dashboard = () => {
     },
   ];
 
-  const themeClass = isDark ? 'bg-black text-white' : 'bg-white text-gray-900';
-  const buttonHoverClass = isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100';
+  const themeClass = isDark
+    ? 'bg-black text-gray-100'
+    : 'bg-white text-gray-900';
+  const buttonHoverClass = isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-200';
 
   const Sidebar = () => {
     const sidebarClass = isDark
-      ? 'bg-black text-white border-gray-800'
-      : 'bg-white text-gray-900 border-gray-200';
-    const itemHoverClass = isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100';
-    const textColorClass = isDark ? 'text-gray-400' : 'text-gray-500';
+      ? 'bg-black text-gray-100 border-gray-800'
+      : 'bg-white text-gray-900 border-gray-300';
+    const itemHoverClass = isDark ? 'hover:bg-zinc-800' : 'hover:bg-gray-200';
+    const textColorClass = isDark ? 'text-gray-400' : 'text-gray-600';
 
     return (
       <div
@@ -155,8 +179,8 @@ const Dashboard = () => {
           <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-500 rounded-xl" />
           <div className="flex-1">
             <div className="font-medium">
-              {user?.userId?.username.charAt(0).toUpperCase()}
-              {user?.userId?.username.slice(1)} Dashboard
+              {user?.username.charAt(0).toUpperCase()}
+              {user?.username.slice(1)} Dashboard
             </div>
             <div className={textColorClass}>sparshgoelk@gmail.com</div>
           </div>
@@ -173,6 +197,7 @@ const Dashboard = () => {
             folders.map((folder) => (
               <div
                 key={folder.id}
+                onClick={folder.onClick}
                 className={`flex items-center justify-between py-2 px-2 ${itemHoverClass} rounded-lg cursor-pointer`}
               >
                 <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>
@@ -207,7 +232,7 @@ const Dashboard = () => {
 
   const getUser = async () => {
     try {
-      const res = await axios.get(`${config.BACKEND_URL}/user/content`, {
+      const res = await axios.get(`${config.BACKEND_URL}/user/getUser`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
@@ -216,23 +241,46 @@ const Dashboard = () => {
         //toast
         console.log(res.data.message);
       } else {
-        setUser(res.data.data[0]);
+        console.log(res.data);
+        setUser(res.data.user);
       }
     } catch (error) {
       console.log(error);
     }
   };
-  const getContent = async () => {
+  const getContent = async (filter: string) => {
     try {
       const res = await axios.get(`${config.BACKEND_URL}/user/content`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
+        params: {
+          filter: filter,
+        },
       });
       if (!res?.data?.success) {
-        console.log(res.data.message);
+        // console.log(res.data.message);
       } else {
         setContent(res.data.data);
+        // console.log(res.data.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getCounting = async () => {
+    try {
+      const res = await axios.get(`${config.BACKEND_URL}/user/count`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (!res?.data?.success) {
+        // console.log(res.data.message);
+      } else {
+        // setContent(res.data.data);
+        setCount(res.data.data);
         console.log(res.data.data);
       }
     } catch (error) {
@@ -241,8 +289,12 @@ const Dashboard = () => {
   };
   useEffect(() => {
     getUser();
-    getContent();
-  }, [isFolderOpen, isShareOpen]);
+    getCounting();
+  }, []);
+  useEffect(() => {
+    getContent('');
+  }, [isModalOpen]);
+  // console.log(content);
   return (
     <>
       <div className="absolute top-0 left-0 w-full z-50">
@@ -257,7 +309,7 @@ const Dashboard = () => {
           <ShareBrain
             theme={isDark ? 'dark' : 'light'}
             isShareOpen={isShareOpen}
-            id={user?.userId?._id}
+            id={user?._id}
             setIsShareOpen={setIsShareOpen}
           />
         )}
@@ -294,8 +346,8 @@ const Dashboard = () => {
                   <Menu className="w-6 h-6" />
                 </button>
                 <h1 className="text-2xl font-semibold text-left ">
-                  Welcome back {user?.userId?.username.charAt(0).toUpperCase()}
-                  {user?.userId?.username.slice(1)}
+                  Welcome back {user?.username.charAt(0).toUpperCase()}
+                  {user?.username.slice(1)}
                 </h1>
               </div>
               <div className="flex items-center gap-4">
@@ -352,18 +404,21 @@ const Dashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4  ">
-                  {content.map((card) => (
-                    <div key={card._id}>
-                      <UniversalCard
-                        id={card._id}
-                        description={card.info.description}
-                        title={card.info.title}
-                        mediaUrl={card.link}
-                        hashtags={card.mainTagId.title}
-                        theme={isDark ? 'dark' : 'light'}
-                      />
-                    </div>
-                  ))}
+                  {content === undefined && <div>No content</div>}
+                  {content &&
+                    content.map((card) => (
+                      <div key={card._id}>
+                        <UniversalCard
+                          id={card._id}
+                          description={card.info.description}
+                          title={card.info.title}
+                          mediaUrl={card.link || card.fileUrl}
+                          hashtags={card.mainTagId.title}
+                          theme={isDark ? 'dark' : 'light'}
+                          isShared={false}
+                        />
+                      </div>
+                    ))}
                 </div>
               </>
             ) : (

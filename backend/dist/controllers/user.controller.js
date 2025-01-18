@@ -12,12 +12,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.login = exports.createUser = void 0;
+exports.getUser = exports.login = exports.createUser = void 0;
 const zod_1 = __importDefault(require("zod"));
 const user_model_1 = require("../models/user.model");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const server_config_1 = __importDefault(require("../config/server.config"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const content_count_model_1 = require("../models/content.count.model");
 const userSchema = zod_1.default.object({
     username: zod_1.default.string().min(3),
     password: zod_1.default.string().min(4),
@@ -48,6 +49,15 @@ const createUser = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
         const newUser = yield user_model_1.User.create({
             username: req.body.username,
             password: hashedPassword,
+        });
+        yield content_count_model_1.contentCount.create({
+            userId: newUser._id,
+            images: [],
+            links: [],
+            audio: [],
+            videos: [],
+            twitter: [],
+            youtube: [],
         });
         res
             .status(200)
@@ -103,3 +113,22 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.login = login;
+const getUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const userId = req.userId;
+        const user = yield user_model_1.User.findOne({ _id: userId });
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found' });
+            return;
+        }
+        res.status(200).json({ success: true, user });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).json({
+            message: 'Internal server error',
+        });
+        return;
+    }
+});
+exports.getUser = getUser;

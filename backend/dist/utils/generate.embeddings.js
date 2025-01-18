@@ -21,9 +21,22 @@ const client = new voyageai_1.VoyageAIClient({ apiKey: server_config_1.default.V
 function generateVoyageAIEmbeddings(input) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            let processedInput;
+            // Check if the input is an object of type Info
+            if (typeof input === 'object' && input !== null) {
+                // Combine the fields of the Info object into a single string for embedding
+                processedInput = `${input.title}\n${input.description}${input.summary ? `\n${input.summary}` : ''}`;
+            }
+            else if (typeof input === 'string') {
+                // Use the input directly if it's a string
+                processedInput = input;
+            }
+            else {
+                throw new Error('Invalid input type. Expected a string or an object of type Info.');
+            }
             // Create a request to generate embeddings
             const response = yield client.embed({
-                input, // Input text (single or array of strings)
+                input: processedInput, // Processed input
                 model: 'voyage-2', // The model to use (replace with the correct model name if needed)
             });
             //@ts-ignore

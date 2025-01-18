@@ -1,20 +1,17 @@
 const HomePage = () => {
   return (
-    <div>
-      <div className="relative  flex  justify-center text-white">
-        <h2 className="text-4xl font-bold pb-4">
-          Explore our Complete Tailwind CSS Tutorial
-        </h2>
-      </div>
-      <div className="relative h-screen w-screen  ">
-        <video
-          src="/assets/bg.mov"
-          muted
-          loop
-          className="absolute z-10 inset-0 h-full 
-        w-full object-cover"
-        ></video>
-      </div>
+    <div className="relative h-screen w-screen overflow-hidden">
+      <video
+        src="/bg.mp4"
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover -z-10 "
+      ></video>
+      <div className="relative z-10 flex items-center justify-center h-full text-white">
+        <h2 className="text-8xl font-bold pb-4">ARE YOU READYYYYY CHAT?</h2>
+      </div>{' '}
     </div>
   );
 };

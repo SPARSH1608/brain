@@ -7,24 +7,47 @@ import { generateContent } from '../utils/generate.content';
 import { detectContentType } from '../utils/detect.content';
 import { generateTags } from '../utils/generate.tags';
 import { generateVoyageAIEmbeddings } from '../utils/generate.embeddings';
-import { upload } from '../utils/upload.file';
+
 import { generateResponse } from '../utils/generate.response';
 import { vectorSearch } from '../utils/vector-search';
 import config from '../config/server.config';
-import { parseApiResponse } from '../utils/Info.parser';
+
 import { mainGenerateTags } from '../utils/mainTag';
 import { Tag } from '../models/tag.model';
-import { uploadRouter } from '../uploadthing';
-import { createUploadthing } from 'uploadthing/server';
+import cloudinary from '../config/cloudinary';
+import { generateImageContent } from '../utils/generate.content.media';
+import { contentCount, IContentCount } from '../models/content.count.model';
+import { processMedia } from '../utils/huggingFace.content';
+import { generateContentFromText } from '../utils/json.formatter';
 
 interface Info {
   title: string;
   description: string;
   summary?: string;
 }
+const UploadToCloudinary = async (file: any) => {
+  try {
+    const result = await cloudinary.uploader.upload(file.path, {
+      resource_type: 'auto',
+    });
+    return result.secure_url;
+  } catch (error) {
+    console.log('error in uploadtoCloudinary', error);
+    throw new Error('Error uploadiing to cloudinary');
+  }
+};
+const fs = require('fs').promises;
 
-// Create an endpoint handler
-const uploadthingHandler = createUploadthing();
+async function getFileBuffer(file: any) {
+  try {
+    const filePath = file.path;
+    const buffer = await fs.readFile(filePath);
+    console.log('File Buffer:', buffer);
+    return buffer;
+  } catch (error) {
+    console.error('Error reading the file:', error);
+  }
+}
 
 export const createContent = async (
   req: Request,
@@ -32,45 +55,44 @@ export const createContent = async (
   next: NextFunction
 ) => {
   try {
+    console.log(req.body);
     const file = req.file;
-    const isLink = req.body.isLink === 'true';
+    const isLink = req.body.isLink;
     const input = req.body.input;
-    console.log(file, input, isLink);
     let fileUrl;
+    console.log(file, input, isLink);
+
     let linkContent: Info | null | undefined;
+    const contentType = detectContentType(file || input);
+    console.log('Content Type:', contentType);
+    if (isLink === 'false' && file) {
+      fileUrl = await UploadToCloudinary(file);
+      console.log('fileUrl', fileUrl);
+      const fileBuffer = await getFileBuffer(file);
+      console.log('fileBuffer', fileBuffer);
 
-    if (!isLink && file) {
-      // Handle file upload
-      const fileData = {
-        name: file.originalname,
-        type: file.mimetype,
-        size: file.size,
-        buffer: file.buffer,
-      };
-
-      const response = uploadRouter.singleMediaUpload.onUploadComplete({
-        input: fileData,
-      });
-
-      fileUrl = response.url;
-      linkContent = await generateContent(fileUrl);
-    } else if (isLink) {
+      if (contentType === 'image') {
+        // linkContent = await processMedia(file.path, 'image', fileBuffer);
+        let data = await generateImageContent(file.path);
+        console.log('data', data);
+        linkContent = await generateContentFromText(data);
+        // linkContent = await generateMediaMetadata(fileBuffer);
+        // } else if (contentType === 'audio') {
+        //   linkContent = await processMedia(file.path, 'audio');
+        // } else if (contentType === 'video') {
+        //   linkContent = await processMedia(file.path, 'video');
+        // }
+      }
+      console.log('linkContent', linkContent);
+    } else {
       // Handle link content
-      if (input.includes('youtu')) {
+      if (input?.includes('youtu')) {
         linkContent = await displayVideoInfo(input);
       } else {
         linkContent = await generateContent(input);
       }
     }
 
-    // if (linkContent === null) {
-    //   res.status(400).json({
-    //     message: 'Link content not found',
-    //   });
-    //   return;
-    // }
-
-    // Generate tags based on the content input
     console.log('linkcontet', linkContent);
     const tags = await generateTags(linkContent);
     console.log('Generated Tags:', tags);
@@ -82,14 +104,14 @@ export const createContent = async (
     // Save the content in the database based on detected type
     const content = new Content({
       userId: req.userId,
-      type: detectContentType(linkContent),
-      text: detectContentType(linkContent) === 'text' ? input : '', // Only if type is text
-      link: detectContentType(linkContent) === 'link' ? input : '', // Only if type is a link
+      type: detectContentType(file || input),
+      text: detectContentType(file || input) === 'text' ? input : '', // Only if type is text
+      link: detectContentType(file || input) === 'link' ? input : '', // Only if type is a link
       fileUrl:
-        detectContentType(linkContent) === 'image' ||
-        detectContentType(linkContent) === 'video' ||
-        detectContentType(linkContent) === 'audio'
-          ? input
+        detectContentType(file || input) === 'image' ||
+        detectContentType(file || input) === 'video' ||
+        detectContentType(file || input) === 'audio'
+          ? fileUrl
           : '', // Only for media files
       tags: tagsArray, // Save the tags array
       info: linkContent,
@@ -104,8 +126,30 @@ export const createContent = async (
       { _id: savedContent._id },
       { mainTagId: mainTagsDocument._id }
     );
+
     await mainTagsDocument.save();
-    const embeddings = await generateVoyageAIEmbeddings(input);
+    //@ts-ignore
+    let userDoc: IContentCount = await contentCount.findOne({
+      userId: savedContent.userId,
+    });
+    console.log('userDoc', userDoc);
+
+    if (savedContent.type === 'link' && savedContent.link?.includes('youtu')) {
+      userDoc?.youtube.push(savedContent._id);
+      userDoc?.links.push(savedContent._id);
+    } else if (
+      savedContent.type === 'link' &&
+      savedContent.link?.includes('x.com')
+    ) {
+      userDoc?.twitter.push(savedContent._id);
+      userDoc?.links.push(savedContent._id);
+    } else if (savedContent.type === 'image') {
+      userDoc?.images.push(savedContent._id);
+    } else {
+      userDoc?.links.push(savedContent._id);
+    }
+    await userDoc.save();
+    const embeddings = await generateVoyageAIEmbeddings(file || input);
     if (embeddings) {
       // Step 3: Save the embeddings in the Embedding collection
       const embedding = new Embedding({
@@ -134,10 +178,28 @@ export const getContents = async (
 ): Promise<void> => {
   try {
     const userId = req.userId;
+
+    const { filter } = req.query;
     console.log('userId', userId);
-    const content = await Content.find({ userId: userId })
-      .populate('userId', 'username')
-      .populate('mainTagId', 'title');
+    console.log('filter', filter);
+    const contentIds = await contentCount.find({
+      userId: userId,
+    });
+    //@ts-ignore
+    console.log('contentIds', contentIds[0][filter]);
+    let content;
+    if (filter) {
+      content = await Content.find({
+        //@ts-ignore
+        _id: { $in: contentIds[0][filter] },
+      })
+        .populate('userId', 'username')
+        .populate('mainTagId', 'title');
+    } else {
+      content = await Content.find({ userId: userId })
+        .populate('userId', 'username')
+        .populate('mainTagId', 'title');
+    }
 
     res.status(200).json({ success: true, data: content });
     return;
@@ -160,6 +222,20 @@ export const deleteContent = async (
     const userId = req.userId;
     console.log('userId', userId);
     const content = await Content.findOne({ _id: contentId, userId: userId });
+    console.log('content', content);
+
+    await contentCount.updateOne(
+      { userId },
+      {
+        $pull: {
+          youtube: contentId,
+          links: contentId,
+          twitter: contentId,
+          images: contentId,
+        },
+      }
+    );
+
     if (!content) {
       res.status(403).json({
         success: false,
@@ -203,11 +279,6 @@ export const searchContent = async (req: Request, res: Response) => {
 
       const searchResults = await vectorSearch(query, collection);
       console.log('Search Results:', searchResults);
-      //const searchResults: {
-      //contentId: string;
-      //embeddings: number[];
-      //score: number;
-      // }[]
 
       const contextEmbeddingsIds = searchResults.map(
         (result) => result.contentId
@@ -304,5 +375,25 @@ export const findContents = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error during search:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+export const getCount = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+
+    const count = await contentCount.find({
+      userId: userId,
+    });
+    //@ts-ignore
+
+    res.status(200).json({ success: true, data: count });
+    return;
+  } catch (error) {
+    console.error('Error creating content:', error);
+    res.status(500).json({
+      message: 'Internal server error',
+    });
+    return;
   }
 };

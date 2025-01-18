@@ -6,7 +6,7 @@ import { Trash2 } from 'lucide-react';
 import DeleteModal from './DeleteModal';
 import axios from 'axios';
 import { config } from '@/config';
-import { useParams } from 'react-router';
+import { Circles } from 'react-loader-spinner';
 
 const MediaEmbed = ({ url }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -50,7 +50,21 @@ const MediaEmbed = ({ url }) => {
       case 'twitter':
         return (
           <blockquote className="twitter-tweet w-full h-full rounded-lg">
-            <a href={url.replace('x.com', 'twitter.com')}>Loading tweet...</a>
+            <a href={url.replace('x.com', 'twitter.com')}>
+              <div className="flex justify-center items-center w-full ">
+                <div className="absolute top-12">
+                  <Circles
+                    height="80"
+                    width="80"
+                    color="red"
+                    ariaLabel="circles-loading"
+                    wrapperStyle={{}}
+                    wrapperClass=""
+                    visible={true}
+                  />
+                </div>
+              </div>
+            </a>
             <script
               async
               src="https://platform.twitter.com/widgets.js"
@@ -107,6 +121,7 @@ type UniversalCardProps = {
   theme: string;
   className?: string;
   description?: string;
+  isShared?: boolean;
 };
 
 const UniversalCard = ({
@@ -114,7 +129,7 @@ const UniversalCard = ({
   title,
   mediaUrl,
   description,
-
+  isShared,
   hashtags = [],
   className = '',
   theme,
@@ -123,9 +138,9 @@ const UniversalCard = ({
   const [contentId, setContentId] = useState('');
   const [showTooltip, setShowTooltip] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const params = useParams<{ shared?: string }>();
-  const isShared = params.shared !== undefined;
-  console.log(isShared);
+
+  // console.log(isShared);
+  // console.log(mediaUrl);
   return (
     <>
       <Card
@@ -133,7 +148,7 @@ const UniversalCard = ({
           group 
           w-full
           max-w-sm
-          h-[420px]
+          h-[400px]
           flex 
           flex-col 
           overflow-hidden 
@@ -210,7 +225,7 @@ const UniversalCard = ({
               </div>
             </div>
           )}
-          {isShared && (
+          {!isShared && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -223,7 +238,7 @@ const UniversalCard = ({
                 transition-colors
                 flex-shrink-0
                 absolute
-                top-4
+                top-1
                 right-2
                 ${
                   theme === 'dark'

@@ -17,30 +17,22 @@ const server_config_1 = __importDefault(require("./config/server.config"));
 const db_1 = require("./config/db");
 const index_1 = __importDefault(require("./routes/index"));
 const cors_1 = __importDefault(require("cors"));
-const uploadthing_1 = require("./uploadthing");
-const server_1 = require("uploadthing/server");
 const app = (0, express_1.default)();
-// app.use(
-//   cors({
-//     credentials: true,
-//     origin: '*',
-//     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-//     allowedHeaders:
-//       'Content-Type, Authorization, X-Content-Type-Options, Accept, X-Requested-With, Origin, Access-Control-Request-Method, Access-Control-Request-Headers',
-//   })
-// );
 app.use((0, cors_1.default)({ origin: '*' }));
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
-// Configure Uploadthing
-const f = (0, server_1.createUploadthing)();
-const uploadthingConfig = {
-    config: {
-        uploadMiddleware: uploadthing_1.uploadRouter,
-        callbackUrl: '/api/uploadthing',
-        // Add any other required configuration options
-    },
-};
+app.use(express_1.default.static('uploads'));
+// __dirname = path.resolve();
+// app.use(
+//   fileUpload({
+//     useTempFiles: true,
+//     tempFileDir: path.join(__dirname, 'tmp'),
+//     createParentPath: true,
+//     limits: {
+//       fileSize: 10 * 1024 * 1024,
+//     },
+//   })
+// );
 app.use('/api/v1', index_1.default);
 const startServer = () => __awaiter(void 0, void 0, void 0, function* () {
     app.listen(server_config_1.default.PORT, () => {

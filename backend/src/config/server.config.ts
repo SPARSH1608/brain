@@ -15,6 +15,8 @@ const config = {
   VOYAGE_API_KEY: process.env.VOYAGE_API_KEY || '',
   YT_API: process.env.YT_API || '',
   IS_VECTOR: process.env.IS_VECTOR || false,
+  API_KEY_HUGGING_FACE: process.env.API_KEY_HUGGING_FACE || '',
+  GROQ_API_KEY: process.env.GROQ_API_KEY || '',
 } as const;
 
 export default config;
